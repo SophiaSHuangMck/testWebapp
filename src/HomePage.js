@@ -114,7 +114,7 @@ function LoginPage() {
         </AuthenticatedTemplate>
         <UnauthenticatedTemplate>
         <p>
-          Login to your organization
+          AAD Login to your organization 
         </p>
           <button onClick={handleLogin} className="loginBtn">Login</button>
         </UnauthenticatedTemplate>
