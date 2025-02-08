@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { useMsal, AuthenticatedTemplate, UnauthenticatedTemplate } from "@azure/msal-react";
-import { loginRequest, apiManagementRequest, userScpoe } from "./authConfig";
+import { useMsal, useIsAuthenticated } from "@azure/msal-react";
+import { loginRequest, apiManagementRequest,userScpoe } from "./authConfig";
 import logo from './logo.svg';
 import axios from 'axios';
 
-function LoginPage() {
+function LoginSuccess() {
   const { instance, accounts } = useMsal();
   const [token, setToken] = useState(null);
   const [userID, setUserID] = useState(null);
   const [data, setData] = useState([]);
   const [isInitialized, setIsInitialized] = useState(false);
+  const isAuthenticated = useIsAuthenticated();
 
   const handleGetData = () => {
     axios.get('https://ctetrans.azure-api.cn/ctetransbo/ConnectWithSqlServer', {
@@ -40,67 +41,74 @@ function LoginPage() {
   };
 
   const handleLogin = () => {
-    instance.loginRedirect(loginRequest).catch(e => {
+    instance.loginRedirect(loginRequest).then(
+      res => {
+        setIsInitialized(true);
+      }
+    ).
+    catch(e => {
       console.error(e);
     });
   };
 
   useEffect(() => {
-    if (accounts.length === 0){
-      handleLogin();
-    }
-  }, []);
-
-  useEffect(() => {
     const initializeMsal = async () => {
-      if (!isInitialized) {
+      try {
         await instance.initialize();
-        setIsInitialized(true);
-      }
-      if (accounts.length > 0) {
-        const request = {
-          ...apiManagementRequest,
-          account: accounts[0]
-        };
-
-        instance.acquireTokenSilent(request).then(response => {
-          setToken(response.accessToken);
-        }).catch(error => {
-          console.error(error);
-          // Fallback to interactive method if silent token acquisition fails
-          instance.acquireTokenPopup(request).then(response => {
-            setToken(response.accessToken);
-          }).catch(error => {
-            console.error(error);
-          });
-        });
-
-        const userRequest = {
-          ...userScpoe,
-          account: accounts[0]
-        };
-
-        instance.acquireTokenSilent(userRequest).then(response => {
-          fetchUserInfo(response.accessToken);
-        }).catch(error => {
-          console.error(error);
-          // Fallback to interactive method if silent token acquisition fails
-          instance.acquireTokenPopup(userRequest).then(response => {
-          }).catch(error => {
-            console.error(error);
-          });
-        });
+        if (!isAuthenticated){
+          handleLogin();
+        }else{
+          setIsInitialized(true);
+        }
+      } catch (error) {
+        console.error('Initialization error:', error);
       }
     };
 
     initializeMsal();
-  }, [instance, accounts, isInitialized]);
+  }, [instance]);
+
+  useEffect(() => {
+    if (isInitialized && accounts.length > 0) {
+      const request = {
+        ...apiManagementRequest,
+        account: accounts[0]
+      };
+
+      instance.acquireTokenSilent(request).then(response => {
+        setToken(response.accessToken);
+      }).catch(error => {
+        console.error(error);
+        // Fallback to interactive method if silent token acquisition fails
+        instance.acquireTokenPopup(request).then(response => {
+          setToken(response.accessToken);
+        }).catch(error => {
+          console.error(error);
+        });
+      });
+
+      const userRequest = {
+        ...userScpoe,
+        account: accounts[0]
+      };
+
+      instance.acquireTokenSilent(userRequest).then(response => {
+        fetchUserInfo(response.accessToken);
+      }).catch(error => {
+        console.error(error);
+        // Fallback to interactive method if silent token acquisition fails
+        instance.acquireTokenPopup(userRequest).then(response => {
+        }).catch(error => {
+          console.error(error);
+        });
+      });
+    }
+  }, [instance,accounts,isInitialized]);
 
   return (
     <div className="App">
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
-        <AuthenticatedTemplate>
           <p>Welcome, {userID} {accounts[0] && accounts[0].name}!</p>
           {token ? <p>Connect to api Management and get Data.</p> : <p>Missing Token.</p>}
           {data.length > 0 && (
@@ -112,16 +120,9 @@ function LoginPage() {
             </div>
           )}
           {token && <button onClick={handleGetData} className="loginBtn">Get Data</button>}
-        </AuthenticatedTemplate>
-        <UnauthenticatedTemplate>
-        <p>
-          AAD Login to your organization 
-        </p>
-          <button onClick={handleLogin} className="loginBtn">Login</button>
-        </UnauthenticatedTemplate>
       </header>
     </div>
   );
 }
 
-export default LoginPage;
+export default LoginSuccess;

@@ -5,12 +5,12 @@ import HomePage from './HomePage';
 import './App.css';
 
 function App() {
-  const isAuthenticated = useIsAuthenticated();
+  // const isAuthenticated = useIsAuthenticated();
   return (
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          {!isAuthenticated && <Route path="*" element={<Navigate to="/" />} />}
+          {/* {!isAuthenticated && <Route path="*" element={<Navigate to="/" />} />} */}
         </Routes>
       </Router>
   );
