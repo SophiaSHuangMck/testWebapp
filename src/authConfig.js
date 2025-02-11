@@ -21,3 +21,4 @@ export const msalConfig = {
   export const userScpoe = {
     scopes: ["https://microsoftgraph.chinacloudapi.cn/.default"]
   };
+const secret = "g-GRf.O~0x4N6R5gZQ68o~C4dQ.Sy1u_n6"
